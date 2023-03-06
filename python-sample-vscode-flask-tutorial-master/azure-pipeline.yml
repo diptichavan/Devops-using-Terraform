@@ -1,0 +1,40 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageRepository: 'myimage'
+  imageTag: '$(Build.BuildId)'
+  containerRegistry: 'myregistry.azurecr.io'
+  containerUsername: myregistry
+  containerPassword: $(myregistryPassword)
+
+steps:
+- task: Docker@2
+  inputs:
+    containerRegistry: $(containerRegistry)
+    repository: $(imageRepository)
+    command: 'build'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(imageTag)
+      latest
+
+- task: Docker@2
+  inputs:
+    containerRegistry: $(containerRegistry)
+    repository: $(imageRepository)
+    command: 'push'
+    tags: |
+      $(imageTag)
+      latest
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'my-subscription'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr repository show-tags --name $(containerRegistry) --repository $(imageRepository) --output table
