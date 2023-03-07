@@ -1,0 +1,60 @@
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - Iaas/**/*
+
+variables:
+- group: MyVariableGroup
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: '$(subscriptionId)'
+  resourceGroupName: '$(resource_group)'
+  location: '$(location)'
+
+steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '$(azureSubscription)'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      # Log in to Azure
+      az login --service-principal -u $(AZURE_CLIENT_ID) -p $(AZURE_CLIENT_SECRET) --tenant $(AZURE_TENANT_ID)
+
+      # Set the active subscription
+      az account set --subscription $(azureSubscription)
+
+      # Create a new resource group
+      az group create --name $(resourceGroupName) --location $(location)
+
+- task: TerraformInstaller@0
+  inputs:
+    terraformVersion: '1.1.0'
+
+- task: TerraformTaskV1@0
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+
+- task: TerraformTaskV1@0
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    environmentServiceName: '<YOUR_ENVIRONMENT_SERVICE_NAME>' # The name of your Azure DevOps service connection
+
+- task: TerraformTaskV1@0
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    environmentServiceName: '<YOUR_ENVIRONMENT_SERVICE_NAME>' # The name of your Azure DevOps service connection
+    commandOptions: '-auto-approve'

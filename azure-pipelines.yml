@@ -6,11 +6,10 @@ resources:
 - repo: self
 
 variables:
-  imageName: myimage
-  registry: myregistry.azurecr.io
-  tag: $(Build.BuildId)
+- group: MyVariableGroup
 
-  vmImageName: 'ubuntu-latest'
+pool:
+  vmImage: 'ubuntu-latest'
 
 stages:
 - stage: Build
